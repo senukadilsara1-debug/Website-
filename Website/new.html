@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Shooting Game - Boss Mode</title>
+
+<style>
+body {
+    margin: 0;
+    overflow: hidden;
+    background: black;
+    font-family: Arial;
+    color: white;
+}
+
+#score {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    font-size: 20px;
+}
+
+canvas {
+    display: block;
+}
+</style>
+</head>
+
+<body>
+
+<div id="score">Score: 0</div>
+<canvas id="gameCanvas"></canvas>
+
+<script>
+const canvas = document.getElementById("gameCanvas");
+const ctx = canvas.getContext("2d");
+
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
+
+let score = 0;
+
+// Player
+let player = {
+    x: canvas.width / 2,
+    y: canvas.height - 50,
+    size: 20
+};
+
+// Objects
+let bullets = [];
+let enemies = [];
+
+// Boss
+let boss = null;
+
+// Spawn enemy
+function spawnEnemy() {
+    enemies.push({
+        x: Math.random() * canvas.width,
+        y: 0,
+        size: 20,
+        speed: 2 + Math.random() * 2
+    });
+}
+setInterval(spawnEnemy, 1000);
+
+// Controls
+document.addEventListener("mousemove", (e) => {
+    player.x = e.clientX;
+});
+
+document.addEventListener("click", shoot);
+
+function shoot() {
+    bullets.push({
+        x: player.x,
+        y: player.y,
+        speed: 7
+    });
+}
+
+// Spawn Boss
+function spawnBoss() {
+    boss = {
+        x: canvas.width / 2 - 75,
+        y: 50,
+        width: 150,
+        height: 40,
+        hp: 20
+    };
+}
+
+// Update
+function update() {
+
+    // Spawn boss at score 10
+    if (score >= 10 && boss === null) {
+        spawnBoss();
+    }
+
+    // Bullets move
+    bullets.forEach((b, i) => {
+        b.y -= b.speed;
+        if (b.y < 0) bullets.splice(i, 1);
+    });
+
+    // Enemies move
+    enemies.forEach((e, i) => {
+        e.y += e.speed;
+        if (e.y > canvas.height) enemies.splice(i, 1);
+    });
+
+    // Enemy collision
+    bullets.forEach((b, bi) => {
+        enemies.forEach((e, ei) => {
+            if (
+                b.x < e.x + e.size &&
+                b.x + 5 > e.x &&
+                b.y < e.y + e.size &&
+                b.y + 10 > e.y
+            ) {
+                enemies.splice(ei, 1);
+                bullets.splice(bi, 1);
+                score++;
+                document.getElementById("score").innerText = "Score: " + score;
+            }
+        });
+    });
+
+    // Boss collision
+    if (boss) {
+        bullets.forEach((b, bi) => {
+            if (
+                b.x > boss.x &&
+                b.x < boss.x + boss.width &&
+                b.y > boss.y &&
+                b.y < boss.y + boss.height
+            ) {
+                bullets.splice(bi, 1);
+                boss.hp--;
+
+                if (boss.hp <= 0) {
+                    score += 20;
+                    boss = null;
+                    document.getElementById("score").innerText = "Score: " + score;
+                }
+            }
+        });
+    }
+}
+
+// Draw
+function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // Player
+    ctx.fillStyle = "lime";
+    ctx.fillRect(player.x, player.y, player.size, player.size);
+
+    // Bullets
+    ctx.fillStyle = "yellow";
+    bullets.forEach(b => {
+        ctx.fillRect(b.x, b.y, 5, 10);
+    });
+
+    // Enemies
+    ctx.fillStyle = "red";
+    enemies.forEach(e => {
+        ctx.fillRect(e.x, e.y, e.size, e.size);
+    });
+
+    // Boss
+    if (boss) {
+        ctx.fillStyle = "purple";
+        ctx.fillRect(boss.x, boss.y, boss.width, boss.height);
+
+        // HP bar
+        ctx.fillStyle = "white";
+        ctx.fillText("BOSS HP: " + boss.hp, boss.x, boss.y - 10);
+    }
+}
+
+// Game loop
+function gameLoop() {
+    update();
+    draw();
+    requestAnimationFrame(gameLoop);
+}
+
+gameLoop();
+</script>
+
+</body>
+  </html>
